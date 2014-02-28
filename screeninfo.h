@@ -3,6 +3,15 @@
 
 #include <QObject>
 #include <QQmlListProperty>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QDebug>
+#include <QQuickItem>
+#include <QQuickWindow>
+
+typedef struct _XDisplay Display;
+typedef unsigned long XID;
+typedef XID Window;
 
 class ScreenInfoScreen;
 

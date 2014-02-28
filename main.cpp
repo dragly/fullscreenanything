@@ -4,11 +4,9 @@
 
 #include "screeninfo.h"
 #include "screeninfoscreen.h"
-#include "fullscreener.h"
 
 int main(int argc, char *argv[])
 {
-    qmlRegisterType<FullScreener>("FullScreener", 1, 0, "FullScreener");
     qmlRegisterType<ScreenInfo>("ScreenInfo", 1, 0, "ScreenInfo");
     qmlRegisterType<ScreenInfoScreen>("ScreenInfo", 1, 0, "ScreenInfoScreen");
 

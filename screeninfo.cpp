@@ -1,8 +1,3 @@
-#include <QGuiApplication>
-#include <QScreen>
-#include <QDebug>
-#include <QQuickItem>
-#include <QQuickWindow>
 #include "screeninfo.h"
 #include "screeninfoscreen.h"
 
@@ -100,7 +95,7 @@ void ScreenInfo::sendToChildren(Display* display, Window win) {
         //    xev.xclient.window = dynamic_cast<QQuickItem*>(parent())->window()->winId();
         xev.xclient.message_type = wm_state;
         xev.xclient.format = 32;
-        xev.xclient.data.l[0] = 1;
+        xev.xclient.data.l[0] = m_fullScreen;
         xev.xclient.data.l[1] = fullscreen;
         xev.xclient.data.l[2] = 0;
         XSendEvent(display, XDefaultRootWindow(display), False,

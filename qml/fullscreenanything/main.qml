@@ -1,6 +1,5 @@
 import QtQuick 2.0
 import QtQuick.Controls 1.1
-import FullScreener 1.0
 import ScreenInfo 1.0
 
 Rectangle {
@@ -13,14 +12,11 @@ Rectangle {
         Component.onCompleted: {
             displaySettings.layoutScreens()
         }
+        fullScreen: displaySettings.fullScreen
         topMost: displaySettings.topMost
         leftMost: displaySettings.leftMost
         rightMost: displaySettings.rightMost
         bottomMost: displaySettings.bottomMost
-    }
-
-    FullScreener {
-        id: fullScreener
     }
 
     DisplaySettings {

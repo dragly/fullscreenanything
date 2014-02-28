@@ -1,15 +1,16 @@
 import QtQuick 2.0
 import QtQuick.Controls 1.1
+import QtQuick.Layouts 1.1
 import ScreenInfo 1.0
 
 Rectangle {
     id: displaySettingsRoot
     property ScreenInfo screenInfo
     property list<Item> screenComponents
+    property alias fullScreen: activateFullScreenRadioButton.checked
     property bool stretchedLeftRight: false
     property size viewportSize: Qt.size(1920, 1080)
     property rect mainGeometry: Qt.rect(0,0,640,480)
-    property rect oculusGeometry: Qt.rect(640,0,320,240)
     property int topMost
     property int bottomMost
     property int leftMost
@@ -17,15 +18,15 @@ Rectangle {
     property bool applyableAsFullScreen
     property bool applyableAsStretched
     property bool mainVisible: true
-    property bool oculusVisible: true
     signal apply
     signal close
     width: 640
     height: 480
     color: "#dfe3ee"
+    focus: true
 
-    onStretchedLeftRightChanged: {
-        console.log(stretchedLeftRight)
+    Component.onCompleted: {
+        forceActiveFocus()
     }
 
     function layoutScreens() {
@@ -50,16 +51,12 @@ Rectangle {
             screenObject.y = screenArea.height * 0.1 + screen.geometry.y * scale
             screenObject.width = screen.geometry.width * scale
             screenObject.height = screen.geometry.height * scale
+            screenObject.use = true
             startX += screenObject.width + 10
             screenComponentsTmp.push(screenObject)
         }
         screenComponents = screenComponentsTmp
-    }
-
-    function disableUseAsOculusOnAll() {
-        for(var i in screenComponents) {
-            screenComponents[i].useAsOculus = false
-        }
+        updateGeometry()
     }
 
     function checkApplyability() {
@@ -68,9 +65,6 @@ Rectangle {
         for(var i in screenComponents) {
             if(screenComponents[i].use) {
                 applyableTmp = true
-                if(screenComponents[i].useAsOculus) {
-                    applyableStretchedTmp = true
-                }
             }
         }
         applyableAsFullScreen = applyableTmp
@@ -78,24 +72,13 @@ Rectangle {
     }
 
     function updateGeometry() {
-        viewportSize.width = parseInt(widthTextField.text)
-        viewportSize.height = parseInt(heightTextField.text)
         if(!fullScreen) {
             mainGeometry.x = 0
             mainGeometry.y = 0
             mainGeometry.width = parent.width * 0.6
             mainGeometry.height = parent.height
-            oculusGeometry.x = mainGeometry.width
-            oculusGeometry.y = 0
-            oculusGeometry.width = parent.width - mainGeometry.width
-            oculusGeometry.height = oculusGeometry.width * (mainGeometry.height / mainGeometry.width)
             mainVisible = true
-            oculusVisible = true
         } else {
-            var oculusMinX = 999999
-            var oculusMinY = 999999
-            var oculusMaxX = 0
-            var oculusMaxY = 0
             var mainMinX = 999999
             var mainMinY = 999999
             var mainMaxX = 0
@@ -108,7 +91,6 @@ Rectangle {
             var rightMostPixel = -999999;
             var topMostPixel = 999999;
             var bottomMostPixel = -999999;
-            var oculusInUse = false
             var mainInUse = false
             for(var i in screenComponents) {
                 var screen = screenComponents[i].screen
@@ -135,60 +117,25 @@ Rectangle {
                         bottomMostPixel = screenBottomMostPixel;
                         bottomMost = screenID;
                     }
-                    if(screenComponents[i].useAsOculus) {
-                        oculusInUse = true
-                        oculusMinX = Math.min(oculusMinX, geometry.x)
-                        oculusMinY = Math.min(oculusMinY, geometry.y)
-                        oculusMaxX = Math.max(oculusMaxX, geometry.x + geometry.width)
-                        oculusMaxY = Math.max(oculusMaxY, geometry.y + geometry.height)
-                    } else {
-                        mainInUse = true
-                        mainMinX = Math.min(mainMinX, geometry.x)
-                        mainMinY = Math.min(mainMinY, geometry.y)
-                        mainMaxX = Math.max(mainMaxX, geometry.x + geometry.width)
-                        mainMaxY = Math.max(mainMaxY, geometry.y + geometry.height)
-                    }
+                    mainInUse = true
+                    mainMinX = Math.min(mainMinX, geometry.x)
+                    mainMinY = Math.min(mainMinY, geometry.y)
+                    mainMaxX = Math.max(mainMaxX, geometry.x + geometry.width)
+                    mainMaxY = Math.max(mainMaxY, geometry.y + geometry.height)
                 }
             }
-            if(oculusInUse && mainInUse) {
-                if(oculusMinX < mainMinX) {
-                    oculusGeometry.x = 0
-                    mainGeometry.x = mainMinX - oculusMinX
-                } else {
-                    mainGeometry.x = 0
-                    oculusGeometry.x = oculusMinX - mainMinX
-                }
-                if(oculusMinY < mainMinY) {
-                    oculusGeometry.y = 0
-                    mainGeometry.y = mainMinY - oculusMinY
-                } else {
-                    mainGeometry.y = 0
-                    oculusGeometry.y = oculusMinY - mainMinY
-                }
-            } else {
-                oculusGeometry.x = 0
-                oculusGeometry.y = 0
-                mainGeometry.x = 0
-                mainGeometry.y = 0
-            }
+            mainGeometry.x = 0
+            mainGeometry.y = 0
 
-            oculusGeometry.width = oculusMaxX - oculusMinX
-            oculusGeometry.height = oculusMaxY - oculusMinY
             mainGeometry.width = mainMaxX - mainMinX
             mainGeometry.height = mainMaxY - mainMinY
 
             mainVisible = mainInUse
-            oculusVisible = oculusInUse
-        }
-        if(oculusVisible) {
-            stretchedLeftRight = stretchedLeftRightCheckBox.checked
-        } else {
-            stretchedLeftRight = true
         }
     }
 
     Keys.onPressed: {
-        if(event.key === Qt.Key_Enter) {
+        if(event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             screenInfo.fullScreenWindowUnderCursor()
         }
     }
@@ -201,54 +148,61 @@ Rectangle {
         }
     }
 
-    Rectangle {
-        id: screenArea
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.margins: parent.width * 0.1
-        anchors.bottom: controls.top
-        anchors.bottomMargin: parent.width * 0.02
-        width: parent.width * 0.8
-        color: "#8b9dc3"
-        Rectangle {
-            anchors.fill: parent
-            visible: !screenArea.enabled
-            color: "white"
-            opacity: 0.8
-            z: 99
-        }
-    }
-
-    Column {
+    ColumnLayout {
         id: controls
         anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: parent.bottom
+            fill: parent
             margins: parent.width * 0.02
         }
         spacing: parent.width * 0.02
-        width: parent.width * 0.9
 
         Label {
-            text: "Move the mouse pointer to the window you want to fullscreen and press the ENTER key."
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "1) Select the screens on which you want the application to be fullscreened:"
+        }
+
+        Rectangle {
+            id: screenArea
+            anchors.horizontalCenter: parent.horizontalCenter
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            color: "#8b9dc3"
+            Rectangle {
+                anchors.fill: parent
+                visible: !screenArea.enabled
+                color: "white"
+                opacity: 0.8
+                z: 99
+            }
+        }
+
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 10
+
+            Label {
+                text: "2) On clicking Return/Enter, fullscreen should be"
+            }
+            RadioButton {
+                id: activateFullScreenRadioButton
+                exclusiveGroup: fullScreenGroup
+                checked: true
+                text: "Enabled"
+            }
+
+            RadioButton {
+                exclusiveGroup: fullScreenGroup
+                text: "Disabled"
+            }
+        }
+
+        Label {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "3) Move the mouse pointer to the window you want to fullscreen (without clicking it) and press the Return/Enter key."
         }
 
         ExclusiveGroup {
             id: fullScreenGroup
-        }
-
-        Row {
-            spacing: 10
-            RadioButton {
-                exclusiveGroup: fullScreenGroup
-                checked: true
-                text: "Activate"
-            }
-
-            RadioButton {
-                exclusiveGroup: fullScreenGroup
-                text: "Deactivate"
-            }
         }
     }
 
@@ -258,7 +212,6 @@ Rectangle {
             id: screenRect
             property bool selected: false
             property bool use: false
-            property bool useAsOculus: false
             property ScreenInfoScreen screen
             width: 100
             height: 60
@@ -280,6 +233,7 @@ Rectangle {
                 onClicked: {
                     screenRect.use = !screenRect.use
                     checkApplyability()
+                    updateGeometry()
                 }
             }
 
