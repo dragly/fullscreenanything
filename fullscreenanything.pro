@@ -23,3 +23,6 @@ HEADERS += \
     screeninfoscreen.h
 
 LIBS += -lX11 -lXinerama
+
+OTHER_FILES += \
+    README.md
